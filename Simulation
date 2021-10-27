@@ -85,7 +85,7 @@ def func(tau):
                   atol=abserr, rtol=relerr)
     
     # concentrations at end of reactor 1 => only c8 going to reactor 2 all
-    # others in hydrolystae stream
+    # others in hydrolystae stream (i.e. c1_0 .. c7_0 = 0)
     
     c0 = [c1_0, c2_0, c3_0, c4_0, c5_0, c6_0, c7_0, pass1[numPoints - 1][7]]
     
@@ -119,6 +119,8 @@ def func(tau):
     # others in hydrolystae stream 
     
     c0 = [c1_0, c2_0, c3_0, c4_0, c5_0, c6_0, c7_0, pass4[numPoints - 1][7]]
+    
+    # reactor 5
     
     pass5 = odeint(HCkinetics, c0, t, args=(k,),
                   atol=abserr, rtol=relerr)
