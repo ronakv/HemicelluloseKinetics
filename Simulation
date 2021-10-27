@@ -1,0 +1,93 @@
+import numpy as np
+from scipy.integrate import odeint
+
+
+
+
+
+def HCkinetics(c, t, p):
+    """
+    Defines the differential equations for the kinetics of the hemicellulose
+    extraction system.
+
+    Arguments:
+        c :  vector of the concentrations:
+                  w = [c1,c2,c3,c4, c5, c6, c7, c8]
+        t :  time
+        p :  vector of the parameters:
+                  p = [k1, k2, k3, k4]
+    """
+    c1, c2, c3, c4, c5, c6, c7, c8 = c
+    k1, k2, k3 , k4 = p
+
+    
+    f = [k4*c2,                                                        #dc1/dt
+         -k4*c2 + k1*(2**k2)*c3 + (1/6)*k3*c8,                         #dc2/dt
+         -k1*(2**k2)*c3 + k1*(3**k2)*c4 + k1*(4**k2)*c5 + (1/6)*k3*c8, #dc3/dt
+         -k1*(3**k2)*c4 + k1*(5**k2)*c6 + k1*(6**k2)*c7 + (1/6)*k3*c8, #dc4/dt
+         -k1*(4**k2)*c5 + (1/6)*k3*c8,                                 #dc5/dt
+         -k1*(5**k2)*c6 + (1/6)*k3*c8,                                 #dc6/dt
+         -k1*(6**k2)*c7 + (1/6)*k3*c8,                                 #dc7/dt
+         -k3*c8                                                        #dc8/dt
+         ]
+    
+    return f
+
+
+
+# ODE solver parameters
+abserr = 1.0e-8
+relerr = 1.0e-6
+stoptime = 10.0
+numpoints = 250
+
+
+k1 = 1.26*10**(-2)
+k2 = 0.65
+k3 = 4.61*10**(-2)
+k4 = 3.60*10**(-4)
+
+# Pack up the parameters and initial conditions:
+k = [k1, k2, k3, k4]
+
+c1_0 = 0
+c2_0 = 0
+c3_0 = 0
+c4_0 = 0
+c5_0 = 0
+c6_0 = 0
+c7_0 = 0
+c8_0 = 1
+
+c0 = [c1_0, c2_0, c3_0, c4_0, c5_0, c6_0, c7_0, c8_0,]
+
+numPoints = 9999
+t = np.linspace(0, 4, numPoints)
+
+# Call the ODE solver.
+
+wsol = odeint(HCkinetics, c0, t, args=(k,),
+              atol=abserr, rtol=relerr)
+
+
+
+highMWfrac = (wsol[numPoints - 1][6] + wsol[numPoints - 1][5] + 
+wsol[numPoints - 1][4])/(1 - wsol[numPoints - 1][7])
+
+
+pass2 = odeint(HCkinetics, wsol[numPoints - 1], t, args=(k,),
+              atol=abserr, rtol=relerr)
+
+pass3 = odeint(HCkinetics, pass2[numPoints - 1], t, args=(k,),
+              atol=abserr, rtol=relerr)
+
+dp110 = wsol[numPoints - 1][6] + pass2[numPoints - 1][6] + pass3[numPoints - 1][6]
+dp90 = wsol[numPoints - 1][5] + pass2[numPoints - 1][5] + pass3[numPoints - 1][5]
+dp70 = wsol[numPoints - 1][4] + pass2[numPoints - 1][4] + pass3[numPoints - 1][4]
+
+totalLongChain = dp110 + dp90 + dp70
+
+conversion = 1 - pass3[numPoints - 1][7]
+
+print('High MW HC recovered = ' + str(totalLongChain))
+print('Conversion = ' + str(conversion * 100) + ' %')
