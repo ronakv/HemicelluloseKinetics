@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.integrate import odeint
+import matplotlib.pyplot as plt
 
 
 
@@ -61,33 +62,52 @@ c8_0 = 1
 
 c0 = [c1_0, c2_0, c3_0, c4_0, c5_0, c6_0, c7_0, c8_0,]
 
-numPoints = 9999
-t = np.linspace(0, 4, numPoints)
+
 
 # Call the ODE solver.
 
-wsol = odeint(HCkinetics, c0, t, args=(k,),
-              atol=abserr, rtol=relerr)
+def func(tau):
+    numPoints = 9999
+    t = np.linspace(0, tau, numPoints)
+    wsol = odeint(HCkinetics, c0, t, args=(k,),
+                  atol=abserr, rtol=relerr)
+    
+    
+    
+    highMWfrac = (wsol[numPoints - 1][6] + wsol[numPoints - 1][5] + 
+    wsol[numPoints - 1][4])/(1 - wsol[numPoints - 1][7])
+    
+    
+    pass2 = odeint(HCkinetics, wsol[numPoints - 1], t, args=(k,),
+                  atol=abserr, rtol=relerr)
+    
+    pass3 = odeint(HCkinetics, pass2[numPoints - 1], t, args=(k,),
+                  atol=abserr, rtol=relerr)
+    
+    dp110 = wsol[numPoints - 1][6] + pass2[numPoints - 1][6] + pass3[numPoints - 1][6]
+    dp90 = wsol[numPoints - 1][5] + pass2[numPoints - 1][5] + pass3[numPoints - 1][5]
+    #dp70 = wsol[numPoints - 1][4] + pass2[numPoints - 1][4] + pass3[numPoints - 1][4]
+    
+    totalLongChain = dp110 + dp90 
+    
+    conversion = 1 - pass3[numPoints - 1][7]
+    
+    print('Total Long chain produced is' + str(totalLongChain))
+    return totalLongChain/conversion
+
+
+taus = np.linspace(2, 12, 100)
+ratio = np.zeros_like(taus)
+i = 0
+for tau in taus:
+    ratio[i] = func(tau)
+    i = i+ 1
+
+plt.plot(taus, ratio)
+plt.xlabel('Residence time')
+plt.ylabel('kg High MW molecular HC produced/kg of hemicellulose solubilized')
 
 
 
-highMWfrac = (wsol[numPoints - 1][6] + wsol[numPoints - 1][5] + 
-wsol[numPoints - 1][4])/(1 - wsol[numPoints - 1][7])
 
 
-pass2 = odeint(HCkinetics, wsol[numPoints - 1], t, args=(k,),
-              atol=abserr, rtol=relerr)
-
-pass3 = odeint(HCkinetics, pass2[numPoints - 1], t, args=(k,),
-              atol=abserr, rtol=relerr)
-
-dp110 = wsol[numPoints - 1][6] + pass2[numPoints - 1][6] + pass3[numPoints - 1][6]
-dp90 = wsol[numPoints - 1][5] + pass2[numPoints - 1][5] + pass3[numPoints - 1][5]
-dp70 = wsol[numPoints - 1][4] + pass2[numPoints - 1][4] + pass3[numPoints - 1][4]
-
-totalLongChain = dp110 + dp90 + dp70
-
-conversion = 1 - pass3[numPoints - 1][7]
-
-print('High MW HC recovered = ' + str(totalLongChain))
-print('Conversion = ' + str(conversion * 100) + ' %')
